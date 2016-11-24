@@ -21,10 +21,9 @@
 int init(const char *dev_name, struct termios *options, struct termios *backup)
 {
   int enocean_dev, flag;
-  int i;
-  
+
   flag = 0;
-  for (i=0; i<10 && !flag; i++)
+  while (!flag)
     {
       flag = 1;
       if ((enocean_dev = open(dev_name, O_RDWR | O_NDELAY)) == -1)
@@ -95,7 +94,6 @@ int init_listen_slave_socket(const char *ip, uint16_t port)
   return (sock);
 }
 
-
 /**
  * \fn char *get_interface_enocean()
  * \return The name of the enocean interface
@@ -106,12 +104,11 @@ char *get_interface_enocean()
 {
   FILE *file;
   char line[128];
-  static char interface[128]; /* secure way of passing a string from a function in C (unless I get a pointer argument)*/
-  int i;
+  char *interface;
 
-    if ((file = fopen("/etc/domoleaf/slave.conf", "r")) == NULL)
+  if ((file = fopen("/etc/domoleaf/slave.conf", "r")) == NULL)
     {
-      fprintf(stderr, "Error: cannot open /etc/domoleaf/slave.conf\n");
+      fprintf(stderr, "Error for open /etc/domoleaf/slave.conf\n");
       return (NULL);
     }
   while (fgets(line, 128, file) != NULL)
@@ -124,23 +121,11 @@ char *get_interface_enocean()
 		{
 		  if (strlen(line) > 13)
 		    {
-		      /* memory leak! each time the function is called, a new memory block is generated. */
-              /*
-              interface = malloc((sizeof(char) * strlen(line)) - 6);
+		      interface = malloc((sizeof(char) * strlen(line)) - 6);
 		      memset(interface, '\0', strlen(line) - 6);
-              */
 		      strcpy(interface, "/dev/");
 		      strcat(interface, &line[12]);
-              
-              /* need to do trimm off white spaces, \n and \r      */      
-              for (i=strlen(interface)-1; i>=0; i--)
-              {
-                  if (interface[i] == '\n' || interface[i] == '\r' || interface[i] == ' ') 
-                      interface[i] = '\0';
-                  else
-                      break;
-              }
-               
+		      /* strcpy_to_n(interface, line, 12); */
 		      fclose(file);
 		      if (strcmp(interface, "/dev/none") == 0)
 			{
