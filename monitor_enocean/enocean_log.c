@@ -101,3 +101,12 @@ void enocean_log_packet(const Enocean_packet packet)
       fprintf(log_stream, "\nCRC8D          : %02x\n", packet.CRC8D);
     }
 }
+
+void enocean_log_close(void)
+{
+    FILE *log_stream;
+    if ((log_stream = open_enocean_log_file()))
+    {
+        fclose(log_stream);
+    }
+}
