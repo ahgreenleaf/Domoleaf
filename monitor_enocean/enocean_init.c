@@ -104,40 +104,48 @@ char *get_interface_enocean()
 {
   FILE *file;
   char line[128];
-  char *interface;
-
+  static char interface[128]; /* secure way of passing a string from a function in C (unless I get a pointer argument) */
+  int i;
+  
   if ((file = fopen("/etc/domoleaf/slave.conf", "r")) == NULL)
-    {
-      fprintf(stderr, "Error for open /etc/domoleaf/slave.conf\n");
+  {
+      fprintf(stderr, "Error: cannot open /etc/domoleaf/slave.conf\n");
       return (NULL);
-    }
+  }
   while (fgets(line, 128, file) != NULL)
-    {
+  {
       if (strncmp(line, "[enocean]", 9) == 0)
-	{
-	  while (fgets(line, 128, file) != NULL)
-	    {
+      {
+        while (fgets(line, 128, file) != NULL)
+        {
 	      if (strncmp(line, "interface = ", 12) == 0)
-		{
-		  if (strlen(line) > 13)
-		    {
-		      interface = malloc((sizeof(char) * strlen(line)) - 6);
-		      memset(interface, '\0', strlen(line) - 6);
-		      strcpy(interface, "/dev/");
-		      strcat(interface, &line[12]);
-		      /* strcpy_to_n(interface, line, 12); */
-		      fclose(file);
-		      if (strcmp(interface, "/dev/none") == 0)
-			{
-			  fprintf(stderr, "No interface has been enter\n");
-			  exit(EXIT_FAILURE);
-			}
-		      return (interface);
-		    }
-		}
+            {
+                if (strlen(line) > 13)
+                {
+                    strcpy(interface, "/dev/");
+                    strcat(interface, &line[12]);
+                    
+                    /* need to do trim off white spaces, \n and \r */      
+                    for (i=strlen(interface)-1; i>=0; i--)
+                    {
+                      if (interface[i] == '\n' || interface[i] == '\r' || interface[i] == ' ') 
+                          interface[i] = '\0';
+                      else
+                          break;
+                    }
+                    fclose(file);
+                    
+                    if (strcmp(interface, "/dev/none") == 0)
+                    {
+                        fprintf(stderr, "No interface has been entered\n");
+                        exit(EXIT_FAILURE);
+                    }
+                    return (interface);
+                }
+            }
 	    }
 	}
-    }
+  }
   fclose(file);
   fprintf(stderr, "Error while reading /etc/domoleaf/slave.conf\n");
   return (NULL);
