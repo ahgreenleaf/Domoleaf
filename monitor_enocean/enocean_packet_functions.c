@@ -158,6 +158,9 @@ int slave_send_data(Slave *slave, void *data, int size)
 static void dump_radio_erp1(Enocean_packet __attribute__((unused)) *packet)
 {
   uint32_t senderid;
+  uint32_t destid;
+  int i;
+  
   /* uint32_t *p_senderid; */
   printf("RADIO_ERP1\n");
   printf("0x%02X      : Sync_byte\n", packet->sync_byte);
@@ -169,7 +172,12 @@ static void dump_radio_erp1(Enocean_packet __attribute__((unused)) *packet)
   if (packet->data[0] == 0xF6)
   {
     printf("0x%02X      : Value\n", packet->data[1]);
-    /*printf("0x%08X: Sender ID\n", (uint32_t) packet->data[2]); */
+
+	senderid =0;
+	for (i=2; i<=5; i++)
+		senderid = (senderid << 8) + packet->data[i];
+	printf("0x%08X: Sender ID\n", senderid);
+	
     senderid = packet->data[2];
     senderid = (senderid << 8) + packet->data[3];
     senderid = (senderid << 8) + packet->data[4];
@@ -178,12 +186,11 @@ static void dump_radio_erp1(Enocean_packet __attribute__((unused)) *packet)
     
     printf("0x%02X      : Status\n", packet->data[6]);
     printf("0x%02X      : SubTelNum\n", packet->opt_data[0]);
-    senderid = packet->opt_data[1];
-    senderid = (senderid << 8) + packet->opt_data[2];
-    senderid = (senderid << 8) + packet->opt_data[3];
-    senderid = (senderid << 8) + packet->opt_data[4];
-    printf("0x%08X: Destination ID\n", senderid);
-    /*printf("0x%08X: Destination ID\n", (uint32_t) packet->opt_data[1]);*/
+    destid = packet->opt_data[1];
+    destid = (destid << 8) + packet->opt_data[2];
+    destid = (destid << 8) + packet->opt_data[3];
+    destid = (destid << 8) + packet->opt_data[4];
+    printf("0x%08X: Destination ID\n", destid);
     printf("0x%02X      : dBm\n", packet->opt_data[5]);
     printf("0x%02X      : SecurityLevel\n", packet->opt_data[6]);
     printf("0x%02X      : CRC8D\n", packet->CRC8D);
@@ -207,10 +214,10 @@ static void dump_radio_erp1(Enocean_packet __attribute__((unused)) *packet)
     /* not correct...
     printf("0x%02X      : SubTelNum\n", packet->opt_data[0]);   
     printf("0x%08X: Destination ID\n", (uint32_t) packet->opt_data[1]);*/
-    senderid = packet->opt_data[1];
-    senderid = (senderid << 8) + packet->opt_data[2];
-    senderid = (senderid << 8) + packet->opt_data[3];
-    senderid = (senderid << 8) + packet->opt_data[4];
+    destid = packet->opt_data[1];
+    destid = (destid << 8) + packet->opt_data[2];
+    destid = (destid << 8) + packet->opt_data[3];
+    destid = (destid << 8) + packet->opt_data[4];
     printf("0x%08X: Destination ID\n", senderid);
     printf("0x%02X      : dBm\n", packet->opt_data[5]);
     printf("0x%02X      : SecurityLevel\n", packet->opt_data[6]);
@@ -238,7 +245,7 @@ void radio_erp1(Enocean_packet __attribute__((unused)) *packet)
   printf("Slave initialized successfully\n");
   if (slave)
     {
-      printf("Sending datas to slave...\n");
+      printf("Sending data to slave...\n");
       slave_send_data(slave, (void *) packet, sizeof(*packet));
       printf("Data sent successfully\n");
       slave_delete(slave);
@@ -345,7 +352,6 @@ Enocean_packet create_packet(uint8_t *buffer, uint16_t data_len, uint8_t opt_dat
   res.header.opt_data_length = opt_data_len;
   res.header.packet_type = packet_type;
   res.CRC8H = buffer[5];
-  res.data = malloc(255);
   memcpy(&res.data[0], &buffer[6], res.header.data_length);
   memcpy(&res.opt_data[0], &buffer[6 + res.header.data_length], res.header.opt_data_length);
   res.CRC8D = buffer[6 + res.header.data_length + res.header.opt_data_length];
