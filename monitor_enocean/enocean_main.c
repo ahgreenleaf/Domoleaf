@@ -33,7 +33,7 @@ int init_select(int enocean_dev, int slave_listen_sock,
   FD_SET(enocean_dev, rfds);
   FD_SET(slave_listen_sock, rfds);
   timeout.tv_sec = 0;
-  timeout.tv_usec = 50;
+  timeout.tv_usec = 1000;
   ret = select(slave_listen_sock + 1, rfds, wfds, NULL, &timeout);
 
   return (ret);
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
   int slave_listen_sock;
   struct termios options;
   struct termios backup;
-  const char *dev_name = get_interface_enocean();
+  char *dev_name = get_interface_enocean();
   int    pid;
   FILE   *pid_file;
   t_args args;
@@ -209,8 +209,8 @@ int main(int argc, char *argv[])
 	    {
 	      return (1);
 	    }
-
-	  enocean_log(LOG_INFO, "Successfully initialized");
+      enocean_log(LOG_INFO, args.device == NULL ? dev_name : args.device);
+	  enocean_log(LOG_INFO, "Successfully initialized as daemon");
 
 	  /* TODO : use configuration file */
 	  if ((slave_listen_sock = init_listen_slave_socket("127.0.0.1", 4248)) == -1)
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
 	{
 	  return (1);
 	}
-
+      enocean_log(LOG_INFO, args.device == NULL ? dev_name : args.device);
       enocean_log(LOG_INFO, "Successfully initialized");
 
       /* TODO : use configuration file */
