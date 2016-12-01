@@ -106,7 +106,7 @@ char *get_interface_enocean()
   char line[128];
   static char interface[128]; /* secure way of passing a string from a function in C (unless I get a pointer argument) */
   int i;
-  
+
   if ((file = fopen("/etc/domoleaf/slave.conf", "r")) == NULL)
   {
       fprintf(stderr, "Error: cannot open /etc/domoleaf/slave.conf\n");
@@ -124,17 +124,17 @@ char *get_interface_enocean()
                 {
                     strcpy(interface, "/dev/");
                     strcat(interface, &line[12]);
-                    
-                    /* need to do trim off white spaces, \n and \r */      
+
+                    /* need to do trim off white spaces, \n and \r */
                     for (i=strlen(interface)-1; i>=0; i--)
                     {
-                      if (interface[i] == '\n' || interface[i] == '\r' || interface[i] == ' ') 
+                      if (interface[i] == '\n' || interface[i] == '\r' || interface[i] == ' ')
                           interface[i] = '\0';
                       else
                           break;
                     }
                     fclose(file);
-                    
+
                     if (strcmp(interface, "/dev/none") == 0)
                     {
                         fprintf(stderr, "No interface has been entered\n");
