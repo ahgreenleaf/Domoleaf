@@ -157,21 +157,66 @@ int slave_send_data(Slave *slave, void *data, int size)
  */
 static void dump_radio_erp1(Enocean_packet __attribute__((unused)) *packet)
 {
+  uint32_t senderid;
+  /* uint32_t *p_senderid; */
   printf("RADIO_ERP1\n");
   printf("0x%02X      : Sync_byte\n", packet->sync_byte);
-  printf("%02X %02X     : Data length\n", packet->header.data_length >> 4, packet->header.data_length);
+  printf("%04X      : Data length\n", packet->header.data_length);
   printf("0x%02X      : Optional data length\n", packet->header.opt_data_length);
   printf("0x%02X      : Packet type\n", packet->header.packet_type);
   printf("0x%02X      : CRC8H\n", packet->CRC8H);
   printf("0x%02X      : R-ORG\n", packet->data[0]);
-  printf("0x%02X      : Value\n", packet->data[1]);
-  printf("0x%08X: Sender ID\n", (uint32_t) packet->data[2]);
-  printf("0x%02X      : Status\n", packet->data[6]);
-  printf("0x%02X      : SubTelNum\n", packet->opt_data[0]);
-  printf("0x%08X: Destination ID\n", (uint32_t) packet->opt_data[1]);
-  printf("0x%02X      : dBm\n", packet->opt_data[5]);
-  printf("0x%02X      : SecurityLevel\n", packet->opt_data[6]);
-  printf("0x%02X      : CRC8D\n", packet->CRC8D);
+  if (packet->data[0] == 0xF6)
+  {
+    printf("0x%02X      : Value\n", packet->data[1]);
+    /*printf("0x%08X: Sender ID\n", (uint32_t) packet->data[2]); */
+    senderid = packet->data[2];
+    senderid = (senderid << 8) + packet->data[3];
+    senderid = (senderid << 8) + packet->data[4];
+    senderid = (senderid << 8) + packet->data[5];
+    printf("0x%08X: Sender ID\n", senderid);
+    
+    printf("0x%02X      : Status\n", packet->data[6]);
+    printf("0x%02X      : SubTelNum\n", packet->opt_data[0]);
+    senderid = packet->opt_data[1];
+    senderid = (senderid << 8) + packet->opt_data[2];
+    senderid = (senderid << 8) + packet->opt_data[3];
+    senderid = (senderid << 8) + packet->opt_data[4];
+    printf("0x%08X: Destination ID\n", senderid);
+    /*printf("0x%08X: Destination ID\n", (uint32_t) packet->opt_data[1]);*/
+    printf("0x%02X      : dBm\n", packet->opt_data[5]);
+    printf("0x%02X      : SecurityLevel\n", packet->opt_data[6]);
+    printf("0x%02X      : CRC8D\n", packet->CRC8D);
+  }
+  else if (packet->data[0] == 0xA5)
+  {
+    printf("0x%02X      : Value ,", packet->data[3]); /* data bytes [1] and [2] are unused (0) */
+    (packet->data[4] & 0x8) ? printf ("valid data\n") : printf("teach -in\n"); 
+    /* the following don't work because we've got a little endian notation. gcc obviously does a big endian notation.
+    p_senderid = (uint32_t*) &packet->data[5];
+    printf("0x%08X: Sender ID\n", *p_senderid); */
+    
+    senderid = packet->data[5];
+    senderid = (senderid << 8) + packet->data[6];
+    senderid = (senderid << 8) + packet->data[7];
+    senderid = (senderid << 8) + packet->data[8];
+    printf("0x%08X: Sender ID\n", senderid);
+    printf("0x%02X      : Status\n", packet->data[9]);
+    
+    /* optional data */
+    /* not correct...
+    printf("0x%02X      : SubTelNum\n", packet->opt_data[0]);   
+    printf("0x%08X: Destination ID\n", (uint32_t) packet->opt_data[1]);*/
+    senderid = packet->opt_data[1];
+    senderid = (senderid << 8) + packet->opt_data[2];
+    senderid = (senderid << 8) + packet->opt_data[3];
+    senderid = (senderid << 8) + packet->opt_data[4];
+    printf("0x%08X: Destination ID\n", senderid);
+    printf("0x%02X      : dBm\n", packet->opt_data[5]);
+    printf("0x%02X      : SecurityLevel\n", packet->opt_data[6]);
+    printf("0x%02X      : CRC8D\n", packet->CRC8D);
+  }
+  
   printf("Initializing slave...\n");
 }
 
@@ -296,10 +341,11 @@ Enocean_packet create_packet(uint8_t *buffer, uint16_t data_len, uint8_t opt_dat
 
   memset(&res, 0, sizeof(res));
   res.sync_byte = buffer[0];
-  res.header.data_length = data_len - 6;
+  res.header.data_length = data_len;
   res.header.opt_data_length = opt_data_len;
   res.header.packet_type = packet_type;
   res.CRC8H = buffer[5];
+  res.data = malloc(255);
   memcpy(&res.data[0], &buffer[6], res.header.data_length);
   memcpy(&res.opt_data[0], &buffer[6 + res.header.data_length], res.header.opt_data_length);
   res.CRC8D = buffer[6 + res.header.data_length + res.header.opt_data_length];
