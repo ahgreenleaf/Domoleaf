@@ -224,5 +224,5 @@ char *get_interface_enocean();
 /* enocean_log.c */
 void enocean_log(Log_type type, const char *msg);
 void enocean_log_packet(const Enocean_packet packet);
-
+void enocean_log_close(void);
 #endif
